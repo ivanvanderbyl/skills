@@ -1,0 +1,4 @@
+interface:
+  display_name: "Post-deploy Watch"
+  short_description: "Verify releases and monitor feature stability"
+  default_prompt: "Use $post-deploy-watch to monitor my recent merges in production."
