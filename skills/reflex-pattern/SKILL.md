@@ -15,6 +15,12 @@ Keep UIKit/AppKit or Android Views when the app uses them; SwiftUI and Compose a
 
 For an isolated styling change or a platform API task that does not affect cross-platform ownership or testing, continue with the relevant platform guidance. For cross-platform rendering, motion or input parity, use the verification references without requiring an architecture change. Do not introduce a shared core or sync system solely because this skill was loaded.
 
+## Resume project work and keep evidence
+
+For each applicable run, follow [Project evidence and continuation](references/evidence-and-resumption.md). Read the project's `.reflex/manifest.json`, current status and newest run's unfinished work before choosing changes. Reuse existing plans and evidence through the manifest. Preserve accepted decisions and dirty work; reconcile recorded claims with the actual source, artifacts and tools.
+
+Initialize missing state without overwriting existing records, then create a unique run record before changes. Record material choices with reasons and sources, verification by target, failures and unfinished work. Checkpoint after meaningful progress and finish with an updated status and concrete next action. Keep the records in the project so later runs can continue without this conversation. A design plan, a test pass and a published artifact are separate evidence.
+
 ## Choose explicit boundaries
 
 Inspect public consumers, repositories, persistence, backend contracts, supported OS versions, tests and dirty files. Reuse decisions already authorised by the user. Record the owner of each state transition and external effect before extracting code.
@@ -40,6 +46,7 @@ Use SwiftJava for the in-process Swift/Kotlin boundary regardless of core size. 
 
 | Work | Reference |
 | --- | --- |
+| Every applicable run: prior decisions, evidence, current work and continuation | [Project evidence and continuation](references/evidence-and-resumption.md) |
 | Fresh projects, separate repositories or iOS-to-monorepo migration | [Projects and migrations](references/projects-and-migrations.md) |
 | Domain state, effects, lifecycle and headless introspection | [Core and contract](references/core-and-contract.md) |
 | SwiftJava API types, platform ports, compatibility and serialized data boundaries | [Typed contracts](references/typed-contracts.md) |
@@ -78,3 +85,5 @@ When porting an existing interface, verify its transitions and native input thro
 Require the intended tests to execute on every claimed host. Distinguish simulator/emulator, physical device, release artifact and remote CI results. Validate an independent public consumer and preserve existing failures without weakening assertions to produce a green report.
 
 Record confirmed failures with their cause, repair and bounded proof in the project's evidence. Keep app-specific versions, paths, counts and incident history out of this reusable skill. Promote only general decisions supported by vendor contracts or observed behaviour; do not claim this guidance implements or runtime-tests a project's sync system.
+
+Close the project run record with its checks, limits and unfinished work, and update the canonical status and next action. Include those records in the code's handoff under the project's existing workflow. Keep earlier failures and decision history available to subsequent runs.

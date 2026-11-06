@@ -124,6 +124,8 @@ For repeated editable items, retain focus through a real reorder and continue ed
 
 ## CI and delivery
 
+Write results into the project's [evidence and continuation record](evidence-and-resumption.md), with source/input identity, target, exact selection, executed/skipped counts, artifact links and unrun required checks. Reconcile discovery and receipts before updating a status row. Carry unfinished checks into the next action instead of losing them at the end of a session.
+
 Build each app before its device job. Require the shared test selection to execute on both targets and report their results separately. Fail missing targets, unbuilt artifacts and unexpected skips. Keep behavior failures separate from runner/device setup failures without turning either into a pass.
 
 Run fast native unit jobs before expensive device jobs. Keep Swift unit, Kotlin host-unit, native integration and shared e2e results distinct. A useful monorepo pipeline builds the SwiftJava bindings once for the required ABI matrix, then supplies matching artifacts to Android consumers and the shared mobile jobs. Scope jobs by changed modules while retaining both platform gates for changes to the core, façade or shared journey contract.

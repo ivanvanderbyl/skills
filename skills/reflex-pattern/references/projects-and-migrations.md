@@ -6,6 +6,8 @@ Select the route that matches the supplied repositories. Preserve approved platf
 
 Recommend one monorepo for a co-shipped Swift core and native Apple/Android apps. Keep the core, SwiftJava generation, platform adapters and shared e2e fixtures in one reviewable change. Preserve the root `Package.swift` for existing source consumers. Keep SwiftPM/Xcode and Gradle as the native build systems; the root JavaScript package supplies shared e2e tooling.
 
+Keep the project-local decision/evidence index with that code, following [Project evidence and continuation](evidence-and-resumption.md). Map existing architecture, backlog and validation documents rather than duplicating them. When importing separate repositories, preserve their evidence and source provenance; identify which coordination record subsequent runs should use.
+
 Use separate repositories when the project's ownership or distribution requirements call for them. Pin the shared core artifacts and fixtures in each consumer. Do not consolidate repositories by force when their release boundaries must remain independent.
 
 ## New Apple and Android projects
