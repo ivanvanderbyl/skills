@@ -24,14 +24,17 @@ Use these defaults when the project has no established equivalent:
 | Boundary | Recommended shape |
 | --- | --- |
 | Domain core | Swift value types, typed actions/internal events and explicit effects; no native managed objects |
-| Swift/Kotlin data contracts | App-owned schema with generated Swift/Kotlin types; prefer Protobuf for durable or substantial cross-language protocols |
-| Native interop | Generated SwiftJava JNI bindings where supported, or a small owned-buffer C ABI/JNI bridge; keep schema and transport separate |
+| Swift/Kotlin API | App-owned Swift value types, actions, effects, results and protocols exposed through a narrow public façade |
+| Native interop | SwiftJava-generated Java wrappers and JNI bindings called directly from Kotlin; no Protobuf or JSON dispatcher for ordinary core calls |
 | Apple persistence | SwiftData, Core Data or the existing store behind a native repository adapter |
 | Android persistence | Room or the existing store behind the same semantic repository contract |
 | External services | One declared owner per operation, either portable Swift transport or native host adapter |
 | Sync | Per-feature online-only, cached-read or durable queued-write policy; one coordinator with native scheduling |
+| Repository layout | One monorepo containing the Swift package, native apps, SwiftJava build integration and shared test fixtures |
+| Shared product tests | One e2e mobile suite using `e2e` and `@e2e-dev/mobile`, with explicit iOS and Android targets |
+| Fast platform-specific tests | Native Swift Testing/XCTest and Kotlin JUnit tests; use native device/instrumentation tests where OS or JNI behaviour is required |
 
-Keep a suitable existing typed contract or direct generated interop. A tiny co-versioned API does not automatically need a second serialization layer. Handwritten maps and string action names are not a substitute for typed production interfaces.
+Use SwiftJava for the in-process Swift/Kotlin boundary regardless of core size. Keep network and persisted payload formats separate from that API. Preserve a useful external Protobuf or JSON contract where it belongs. Handwritten maps and string action names are not a substitute for typed production interfaces. When migrating an existing byte-dispatch bridge, follow [Typed contracts](references/typed-contracts.md) and retain required consumer compatibility until the native path is verified.
 
 ## Load the relevant references
 
@@ -39,7 +42,7 @@ Keep a suitable existing typed contract or direct generated interop. A tiny co-v
 | --- | --- |
 | Fresh projects, separate repositories or iOS-to-monorepo migration | [Projects and migrations](references/projects-and-migrations.md) |
 | Domain state, effects, lifecycle and headless introspection | [Core and contract](references/core-and-contract.md) |
-| Generated DTOs, ABI envelopes, versioning and schema evolution | [Typed contracts](references/typed-contracts.md) |
+| SwiftJava API types, platform ports, compatibility and serialized data boundaries | [Typed contracts](references/typed-contracts.md) |
 | SwiftData/Room adapters, transactions, migrations and offline/online sync | [Persistence and sync](references/persistence-and-sync.md) |
 | HTTP/RPC, authentication, streams, retries and background transfers | [External APIs](references/external-apis.md) |
 | Swift cross-compilation, JNI, actors and packaging | [Swift on Android](references/swift-on-android.md) |
@@ -52,7 +55,7 @@ Keep a suitable existing typed contract or direct generated interop. A tiny co-v
 ## Implement one production path
 
 1. **Define authority and write policy.** Distinguish transient view state, durable local data and server-authoritative data. Specify which operations work offline and which require an online decision. Choose domain-specific conflict behaviour.
-2. **Define typed contracts.** Specify actions, state snapshots/deltas, effect requests/results and failures. Define IDs, correlation, account/session generation, revisions and compatibility. Keep bridge, API and database schemas independently versioned.
+2. **Define typed contracts.** Specify the SwiftJava façade's actions, state snapshots/deltas, effect requests/results and failures. Define IDs, correlation, account/session generation, revisions and compatibility. Track the generated native API, external API schemas and stored payload versions separately.
 3. **Extract the core.** Move portable decisions into a UI-free module with injected ports, identifiers and clocks. Route UI and headless actions through the same owner. Reject invalid input before committing state.
 4. **Implement native adapters.** Map SwiftData/Room records to portable values inside their native isolation/transaction boundaries. Return explicit persistence results. Keep credentials, native handles, schedulers and permissions in their host adapters.
 5. **Prove a vertical slice.** Drive one real action through the CLI and both native apps. If it is a durable offline operation, verify local commit, restart, replay and server acknowledgement. If it is online-only, verify the offline refusal and ambiguous-result recovery instead.
@@ -64,11 +67,11 @@ For a durable write, distinguish optimistic presentation, committed local state,
 
 Project the real state and typed action descriptors into a headless inspection API. Keep eligibility and domain validation in the production owner. Focus the active screen/node, validate target identity and define any ancestor-action propagation. Fixture construction, clocks and effect delivery belong to a separate harness boundary.
 
-Use a schema-derived JSON projection or NDJSON CLI for inspectability without making untyped JSON the production contract. Keep diagnostics off protocol stdout. If a debug introspection server is needed, exclude it from release builds and restrict/redact sensitive state.
+Use an explicit JSON projection or NDJSON CLI for inspectability. Have it call the same typed owner as the SwiftJava façade; keep the production Android path on generated native calls. Keep diagnostics off protocol stdout. If a debug introspection server is needed, exclude it from release builds and restrict/redact sensitive state.
 
 ## Verify and deliver
 
-Run shared behaviour expectations through the production Swift core and Android bridge. Add real native store/migration, transport and lifecycle checks for boundaries the headless core cannot establish. Use shared mobile journeys when appropriate; retain native tests for unsupported input, rendering and OS behaviours.
+Use e2e mobile for shared Apple/Android product journeys through both native apps. Keep fast core and platform-specific unit tests in native Swift Testing/XCTest and Kotlin JUnit suites. Add real native store/migration, transport and lifecycle checks for boundaries a unit test cannot establish. Retain native tests for input, rendering and OS behaviours the shared driver cannot exercise. Use [Shared tests](references/shared-tests.md) for the test layers and their evidence.
 
 When porting an existing interface, verify its transitions and native input through [motion and native input](references/motion-and-input.md). Compare timestamped frame sequences, including the first changed frame and settled content. Static screenshots and shared state tests do not establish animation or keyboard parity. Keep visual parity incomplete until the required comparisons pass or the user accepts a specific difference.
 

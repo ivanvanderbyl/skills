@@ -1,6 +1,6 @@
 # Native services and lifecycle
 
-Read this reference for features that cannot be implemented solely by a portable reducer. Expose typed capabilities and results to Core; retain OS objects and SDK lifecycle in the native adapter. Use [typed contracts](typed-contracts.md) for the envelope and [external APIs](external-apis.md) for transport/authentication ownership.
+Read this reference for features that cannot be implemented solely by a portable reducer. Expose typed capabilities and results to Core; retain OS objects and SDK lifecycle in the native adapter. Use [typed contracts](typed-contracts.md) for the SwiftJava façade and platform ports, and [external APIs](external-apis.md) for transport/authentication ownership.
 
 ## Assign the native boundary
 

@@ -21,7 +21,7 @@ Android's [offline-first guide](https://developer.android.com/topic/architecture
 
 ## Define repository and remote contracts
 
-Use value snapshots and typed commands across the bridge, such as `TaskSnapshot`, `RenameTask` and `ApplyTaskChanges`. Map store objects to snapshots inside their owning context or coroutine. Return effects as internal Reflex messages. Let the reducer distinguish an optimistic edit, a successful local commit and a server acknowledgement.
+Use value snapshots and typed commands across the SwiftJava API, such as `TaskSnapshot`, `RenameTask` and `ApplyTaskChanges`. Map store objects to snapshots inside their owning context or coroutine. Implement a supported generated protocol interface or consume typed effect requests and return typed completion events. Keep Room's Flow, suspending DAO calls and entities inside the Kotlin adapter; do not assume the generator translates them into Swift repository requirements. Let the reducer distinguish an optimistic edit, a successful local commit and a server acknowledgement.
 
 Record these semantics before implementing adapters:
 

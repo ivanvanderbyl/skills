@@ -17,9 +17,9 @@ Choose one writer/coordinator for each operation. Repository observation, an API
 
 Trace imports and transitive dependencies before moving files. A type that carries a SwiftUI factory, SwiftData model, Android Context or native SDK handle is not portable because its file moved into a Core target. Separate data/runtime logic from native factories where needed.
 
-Use Swift value models and enums for domain actions, internal events and effects. Keep domain types separate from [generated boundary DTOs](typed-contracts.md), native database entities and third-party API models. Map at the appropriate adapter boundary rather than adding transport annotations and platform fields to every domain model.
+Use Swift value models and enums for domain actions, internal events and effects. Expose a narrow [SwiftJava API](typed-contracts.md) over that owner. Reuse suitable portable types and add bridge-specific types only where export support or public compatibility requires them. Keep native database entities and third-party API models in their adapters rather than adding platform fields to every domain model.
 
-Serialize state transitions through a declared actor/executor or reducer owner. Do not hold that owner blocked while a native repository, UI thread or network callback must return work to it. Explicit asynchronous effect requests and result events are a valid port when Kotlin cannot directly implement a Swift protocol across the selected interop.
+Serialize state transitions through a declared actor/executor or reducer owner. Do not hold that owner blocked while a native repository, UI thread or network callback must return work to it. Use a SwiftJava-generated protocol interface for a Kotlin port when its requirements are supported. Use typed asynchronous effect requests and result events when a direct protocol implementation is unsuitable.
 
 For each effect define its request ID, account/session generation, cancellation owner and result type. Match a result to the initiating operation before applying it. Preserve partial results, retries and user-visible errors according to the feature contract. Keep independent effects concurrent when useful; coordinate refresh, sync and transactions where they share a resource.
 
@@ -41,7 +41,7 @@ The inspection layer decodes an envelope, maps to a typed action, dispatches and
 
 Define session creation, inspection, dispatch and closure. Keep deterministic fixtures, clocks and scheduled service delivery outside discoverable user actions. Test IDs and scheduling controls must not become production mutation backdoors.
 
-NDJSON is useful for a persistent subprocess host. Flush each reply before waiting for the next request, correlate concurrent requests and keep logging off stdout. The JSON projection can be generated from the typed contract; it need not be the binary/native ABI. Prefer local calls or subprocesses when no network listener is needed. Compile a network inspection service out of release artifacts.
+NDJSON is useful for a persistent subprocess host. Flush each reply before waiting for the next request, correlate concurrent requests and keep logging off stdout. Map the inspection projection to the typed owner. Keep Android production calls on SwiftJava-generated methods independently of this projection. Prefer local calls or subprocesses when no network listener is needed. Compile a network inspection service out of release artifacts.
 
 ## Compatibility
 

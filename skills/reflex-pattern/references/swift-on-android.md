@@ -4,7 +4,7 @@ Read this reference when Kotlin consumes the same Swift logic as the Apple app. 
 
 ## Prove the toolchain before broad extraction
 
-Record the host Swift compiler version, Android Swift SDK version, NDK version, target triple and minimum Android API. The open-source host toolchain and Android Swift SDK must match. An installed Xcode Swift compiler is not sufficient evidence that cross-compilation is configured.
+Record the host Swift compiler version, Android Swift SDK version, NDK version, target triple and minimum Android API. Record SwiftJava, its support libraries, the build JDK and generated Java source level. The open-source host toolchain and Android Swift SDK must match. An installed Xcode Swift compiler is not sufficient evidence that cross-compilation is configured.
 
 Keep task tooling in a declared local cache or use an existing toolchain manager. Avoid changing the user's global active toolchain just to run the project. Pin a verified toolchain matrix in the repository's build scripts or CI configuration. For native Android dependencies, also inspect AAR minimum compile SDK/minor-SDK metadata and Kotlin dependencies before selecting AGP, Gradle and Kotlin/Compose compiler versions. A transitive browser engine can require a newer Android toolchain even when the Swift core still builds.
 
@@ -12,19 +12,33 @@ Build in these increments:
 
 1. Compile a minimal Swift library for the Android ABI required by the emulator.
 2. Inspect its native dependencies and package its runtime libraries in an APK.
-3. Call it from Kotlin through JNI inside the installed app.
+3. Generate Java wrappers and Swift JNI glue with SwiftJava; call the library from Kotlin inside the installed app.
 4. Cross-compile the actual portable core and its dependencies.
 5. Run a real production state/action journey through the Kotlin wrapper.
 
 A successful macOS executable or an Android command-line executable does not prove app packaging or JNI integration. Verify the APK installation and observed output before calling the bridge usable.
 
-## Choose typed interop and keep the ABI small
+## Generate the native API with SwiftJava
 
-Prefer the documented generated SwiftJava JNI path when it supports the exported façade. The [official Android integration guide](https://www.swift.org/documentation/articles/swift-sdk-for-android-getting-started.html) links that tooling; [SwiftJava feature support](https://docs.swift.org/latest/documentation/swiftjavadocumentation/featuresjextract/) defines which Swift types and asynchronous APIs can be exported. Prove the actual type graph with the pinned generator. Do not infer support for every generic type, closure, actor or coroutine cancellation path from a generated method compiling.
+Start from the recommended [hello-swift-java example](https://github.com/swiftlang/swift-android-examples/tree/main/hello-swift-java). Use SwiftJava `jextract --mode=jni` to generate the Kotlin-callable Java API and Swift JNI glue from the public façade. Compile the glue with the Swift library and package the matching generated Java classes and support runtimes. Consult the pinned release's CLI/configuration and example build tasks for complete commands; one generator invocation alone is not an Android build. Keep the build JDK, generated Java level and Android/desugaring support distinct. SwiftJava's FFM mode targets a different Java runtime integration; select JNI for Android.
 
-For an owned-buffer C ABI, transport a versioned schema such as Protobuf through JNI byte arrays and an explicit byte length. Put generated Swift/Kotlin DTOs behind typed façades. A schema-generated JSON encoding is also suitable when it matches an existing contract. Keep NDJSON/JSON inspection separate from the choice of production binary ABI. [Typed contracts](typed-contracts.md) explains when direct generated bindings avoid a second encoding layer.
+Expose typed methods and values directly. Keep Protobuf and JSON encoding in external-service, persistence or inspection adapters when those formats are needed there. See [Typed contracts](typed-contracts.md) for API design and migration from a byte dispatcher.
 
-Define the ownership contract beside the header and wrapper:
+Prove the actual type graph with the pinned generator. The examined [0.7.0 feature documentation](https://github.com/swiftlang/swift-java/blob/0.7.0/Sources/SwiftJavaDocumentation/Documentation.docc/FeaturesJextract.md) includes classes, structs, enums with associated values, protocols, throwing functions and async functions. It also lists limited generic support and unsupported `@Sendable` closure parameters. Check the selected release rather than assuming the latest documentation applies. Flatten an unsupported export to concrete façade types or typed effect requests/results before considering a different bridge.
+
+Use generated protocol interfaces for Kotlin-implemented native ports only after checking the exact requirements. The [weather example](https://github.com/swiftlang/swift-android-examples/tree/main/swift-java-weather-app) demonstrates a Kotlin implementation of a Swift protocol and an asynchronous Swift call. That example does not establish automatic export of every asynchronous repository interface.
+
+For Swift `async`, select the supported future mode for the minimum Android API. In the documented `CompletableFuture` mode, Kotlin can use `kotlinx.coroutines.future.await` with the matching coroutine dependency. Do not block Compose's UI thread with `get()`, `join()` or a synchronous callback waiting on UI work. Verify cancellation of the underlying Swift operation separately from cancellation of its Kotlin observer. Adapt observation to `StateFlow`/`Flow` explicitly; do not infer automatic `AsyncSequence` translation.
+
+Follow the generated `SwiftArena` lifetime rules. Give the Kotlin session owner responsibility for native wrappers, subscriptions and in-flight work. Keep values referenced by state alive until their users finish, or copy them into Kotlin-owned snapshots through an explicit mapping. Use the pinned runtime's closeable ownership API when deterministic teardown is required; do not guess method names or assume garbage collection supplies that lifecycle. See [Typed contracts](typed-contracts.md#async-callbacks-and-ownership).
+
+Keep a consumer outside the implementation module. Exercise representative optional values, enum payloads, collections, errors and a Kotlin-to-Swift-to-Kotlin callback through installed native calls. Do not infer support for an actor or closure path merely because another exported method compiled.
+
+## Migrate an existing manual bridge
+
+Keep the existing public bridge compatible while replacing its internal callers in verified slices. [Typed contracts](typed-contracts.md#build-compatibility-and-migration) defines the migration route. Preserve a headless JSON projection as a separate adapter where required. Do not route the new generated methods through the old generic serialized dispatcher.
+
+While a manual C/JNI bridge remains in use, retain its ownership contract beside the header and wrapper:
 
 - Who owns each input buffer and how long it remains valid.
 - Who allocates the response and which exported function frees it.

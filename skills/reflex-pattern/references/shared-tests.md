@@ -1,6 +1,21 @@
 # Shared tests
 
-Use one set of behaviour expectations across platform hosts. A shared Swift implementation still needs tests of both its direct host and Android bridge; serialization, ownership and lifecycle differ.
+Use one set of behaviour expectations across platform hosts. A shared Swift implementation still needs tests of both its direct host and SwiftJava-generated Android API; type mapping, ownership and lifecycle differ.
+
+## Choose the test layer
+
+Use e2e mobile (`e2e` with `@e2e-dev/mobile`) for shared iOS/Android product journeys. Keep one suite with both native targets and common fixture semantics. Use each platform's native unit-test solution for fast, focused checks. Do not drive a device for every reducer branch or port unit tests into TypeScript merely to share a runner.
+
+| Scope | Recommended runner | Evidence |
+| --- | --- | --- |
+| Shared user journeys | e2e mobile, with iOS and Android targets | The same observable product expectations pass through both native apps |
+| Portable Swift decisions and Apple-specific units | Swift Testing for new suitable suites; XCTest where the existing suite or platform tooling requires it | Fast validation, state transition, mapping and cancellation-policy checks without a device when possible |
+| Kotlin-specific units | JUnit compatible with the pinned Android toolchain; `kotlinx-coroutines-test` for coroutine logic | Fast host-JVM adapter/policy checks using controlled dependencies and scheduling |
+| SwiftJava, real stores, platform UI or OS lifecycle | Native Apple tests or Android instrumentation tests, such as AndroidJUnitRunner and native UI test APIs | Real JNI execution, native transaction/migration, input or lifecycle behaviour that host-only units cannot establish |
+
+Preserve a useful existing native unit framework rather than rewriting its tests. Run Android host units without an emulator where their dependencies permit it. Swift Android `.so` loading and real Room/SwiftData or OS behaviour require suitable native integration tests; a JVM fake or in-memory store is not that evidence. Put tests beside their owning modules and keep shared mobile journeys/fixtures at the monorepo level. See [Projects and migrations](projects-and-migrations.md) for the recommended layout.
+
+Use the supported APIs for the pinned toolchain: [Swift Testing](https://developer.apple.com/documentation/testing/), [Android local JUnit tests](https://developer.android.com/training/testing/local-tests) and [Kotlin coroutine test support](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/). Keep native integration setup separate from host-unit dependencies.
 
 ## Headless behaviour journeys
 
@@ -12,13 +27,19 @@ Useful journey boundaries include successful submission, partial failure, cancel
 
 Make identifiers, time and fixture effect delivery deterministic. Wait for the expected state with bounded polling or an explicit fixture clock. Return the failed action, expected state, observed state and fixture identity on failure. Do not use sleeps to make a journey pass.
 
-## Typed contract compatibility
+## SwiftJava native API compatibility
 
-Generate Swift/Kotlin bindings with pinned schema tools and runtimes, then verify regeneration produces no unexplained drift. Run shared vectors through the actual encoders/decoders on both sides of the bridge. A schema compiling does not prove the generated bindings, JNI transport or semantic validation work.
+Generate Java wrappers and Swift JNI glue from the production façade with pinned SwiftJava tooling and support runtimes. Verify regeneration produces no unexplained drift. Compile an independent Kotlin consumer of the exported API, then run representative calls in an installed Android app. A Swift-only test or successful wrapper compilation does not establish JNI behaviour.
 
-Cover the contract's meaningful boundaries: absent/default/null values, unknown enum/action/version handling, oneof/tagged-union cases, integer limits beyond JavaScript's exact range, decimal/currency representation, date/time precision, binary payload length and Unicode. Exercise older supported readers/writers when stored outbox records or distributed app versions can outlive a release. Verify structured rejection leaves state unchanged.
+Exercise actual generated construction and access for meaningful optional values, enum cases with payloads, collections, integer limits, binary lengths and Unicode. Compare semantic outcomes with the direct Swift host. Include expected failures, eligibility and stale account/operation rejection. Verify rejection leaves state unchanged. Do not insert a JSON or Protobuf codec merely to share the vectors.
 
-For direct generated SwiftJava APIs, compile an independent Kotlin consumer of the exported types and exercise its asynchronous error/cancellation behaviour in an installed Android app. For an owned-buffer ABI, add real allocation/release and cancelled-handoff checks. Do not infer either guarantee from an in-process Swift unit test.
+Exercise a Kotlin-implemented port or typed effect/result round trip, an async success and failure, coroutine cancellation with late delivery, native arena lifetime, callback-after-close and activity/session recreation. Verify whether cancellation reaches the Swift task and whether a subscription stops delivering after teardown. Test build identity and packaged wrapper/runtime alignment. Check release shrinking and native loading using the actual distributed artifact.
+
+When migrating a manual buffer ABI, retain allocation/release and cancelled-handoff checks until its callers are removed. Keep headless JSON projection tests separate from evidence that production Kotlin invokes the generated native API.
+
+## Serialized API and storage compatibility
+
+For network protocols, persisted outbox payloads and other retained serialized formats, run shared vectors through their actual codecs. Cover presence/clear semantics, unknown values, numeric/decimal/time precision, malformed data and supported old/new readers and writers. Keep schema regeneration checks when that boundary uses generated schemas. These checks verify the serialized format; they do not replace native binding or database migration tests.
 
 ## Native repositories and sync
 
@@ -50,7 +71,7 @@ Choose the guard to cover the transports the core can actually use. State any un
 
 ## Shared e2e mobile journeys
 
-When the project selects [e2e mobile](https://e2e.com/docs/mobile), use one test file with explicit iOS and Android targets. Install its pinned compatible packages using the project's package manager. Check the installed `e2e guide setup` and `e2e guide writing-tests` before relying on a remembered API.
+Use [e2e mobile](https://e2e.com/docs/mobile) for the shared product suite, with explicit iOS and Android targets in one config. Install pinned compatible `e2e` and `@e2e-dev/mobile` packages using the project's package manager. Check the installed `e2e guide setup` and `e2e guide writing-tests` before relying on a remembered API. Keep native units and instrumentation in their native runners; the shared suite complements them.
 
 An illustrative config is:
 
@@ -59,7 +80,7 @@ import type { E2EConfig } from 'e2e';
 import { mobile } from '@e2e-dev/mobile';
 
 export default {
-  tests: 'tests/mobile/**/*.e2e.ts',
+  tests: 'Tests/mobile/**/*.e2e.ts',
   targets: [
     {
       name: 'ios',
@@ -105,6 +126,8 @@ For repeated editable items, retain focus through a real reorder and continue ed
 
 Build each app before its device job. Require the shared test selection to execute on both targets and report their results separately. Fail missing targets, unbuilt artifacts and unexpected skips. Keep behavior failures separate from runner/device setup failures without turning either into a pass.
 
+Run fast native unit jobs before expensive device jobs. Keep Swift unit, Kotlin host-unit, native integration and shared e2e results distinct. A useful monorepo pipeline builds the SwiftJava bindings once for the required ABI matrix, then supplies matching artifacts to Android consumers and the shared mobile jobs. Scope jobs by changed modules while retaining both platform gates for changes to the core, façade or shared journey contract.
+
 Archive enough state, logs, screenshots and video to diagnose failures. Verify fresh install and an independent package consumer. Report which OS/ABI/device and availability branches ran; do not infer coverage of older supported systems from a latest-OS run.
 
-Keep schema generation/compatibility, core journeys, native repository/migration tests and mobile journeys as separate gates. Add restart/offline/reconnect coverage where promised. Preserve the distinction between a proposed validation plan, a selected test, an emulator result, a physical-device result and an executed remote CI job.
+Keep SwiftJava generation/native API checks, serialized-format compatibility where applicable, core journeys, native repository/migration tests and mobile journeys as separate gates. Add restart/offline/reconnect coverage where promised. Preserve the distinction between a proposed validation plan, a selected test, an emulator result, a physical-device result and an executed remote CI job.
