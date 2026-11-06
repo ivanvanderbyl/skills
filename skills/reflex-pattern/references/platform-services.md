@@ -41,4 +41,6 @@ Exercise actual native permission revocation, activity/scene recreation, backgro
 
 Check native input composition, keyboard modifiers, large fonts, right-to-left layout, screen readers and reduced motion against the supported feature set. Sharing a state model does not make two native renderers geometrically equivalent. Keep presentation strings localised and separate from protocol enum values or error codes.
 
+For a port's rendering, motion and keyboard parity, use [motion and native input](motion-and-input.md), including forwarded emulator keys and the first visible frame of a transition.
+
 Validate release packaging, ABI closure, JNI symbol retention/shrinking rules, resources, minimum OS/API support and independent consumers. Distinguish source compatibility from binary compatibility and debug execution from release operation. Verify the current vendor requirements for the project's versions rather than adopting another app's SDK pins or size measurements.

@@ -1,6 +1,6 @@
 ---
 name: reflex-pattern
-description: Design, build or migrate native Swift/SwiftUI and Kotlin/Android apps around a testable shared Swift core, typed contracts and platform adapters. Use for cross-platform architecture, core extraction, persistence/sync boundaries and shared behaviour tests.
+description: Design, build or migrate native Swift/SwiftUI and Kotlin/Android apps around a testable shared Swift core, typed contracts and platform adapters. Use for cross-platform architecture, core extraction, persistence/sync boundaries, shared behaviour tests and visual, motion or native-input parity.
 ---
 
 # Reflex pattern for Swift and Android
@@ -13,7 +13,7 @@ Keep UIKit/AppKit or Android Views when the app uses them; SwiftUI and Compose a
 
 ## Check applicability
 
-For an isolated styling change or a platform API task that does not affect cross-platform ownership or testing, continue with the relevant platform guidance. Do not introduce a shared core or sync system solely because this skill was loaded.
+For an isolated styling change or a platform API task that does not affect cross-platform ownership or testing, continue with the relevant platform guidance. For cross-platform rendering, motion or input parity, use the verification references without requiring an architecture change. Do not introduce a shared core or sync system solely because this skill was loaded.
 
 ## Choose explicit boundaries
 
@@ -45,6 +45,7 @@ Keep a suitable existing typed contract or direct generated interop. A tiny co-v
 | Swift cross-compilation, JNI, actors and packaging | [Swift on Android](references/swift-on-android.md) |
 | Permissions, OS lifecycle, files, payments, identity and native capabilities | [Platform services](references/platform-services.md) |
 | Contract, repository, sync, native and shared UI tests | [Shared tests](references/shared-tests.md) |
+| Animation, effects, streaming text, scrolling or keyboard parity | [Motion and native input](references/motion-and-input.md) |
 | Generated UI, rich text or embedded web content, only when present | [Rich native content](references/rich-content.md) |
 | A failing boundary | [Troubleshooting](references/troubleshooting.md) |
 
@@ -68,6 +69,8 @@ Use a schema-derived JSON projection or NDJSON CLI for inspectability without ma
 ## Verify and deliver
 
 Run shared behaviour expectations through the production Swift core and Android bridge. Add real native store/migration, transport and lifecycle checks for boundaries the headless core cannot establish. Use shared mobile journeys when appropriate; retain native tests for unsupported input, rendering and OS behaviours.
+
+When porting an existing interface, verify its transitions and native input through [motion and native input](references/motion-and-input.md). Compare timestamped frame sequences, including the first changed frame and settled content. Static screenshots and shared state tests do not establish animation or keyboard parity. Keep visual parity incomplete until the required comparisons pass or the user accepts a specific difference.
 
 Require the intended tests to execute on every claimed host. Distinguish simulator/emulator, physical device, release artifact and remote CI results. Validate an independent public consumer and preserve existing failures without weakening assertions to produce a green report.
 

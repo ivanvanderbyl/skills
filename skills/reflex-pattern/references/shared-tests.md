@@ -93,6 +93,8 @@ Reserve each simulator/emulator for one active worker. Independent source work c
 
 Keep native tests for input paths the shared driver cannot exercise, including marked-text composition and hardware-key lifecycle when relevant. Preserve macOS checks if the product supports it.
 
+For animation, streaming, scrolling and keyboard equivalence, follow [motion and native input](motion-and-input.md). Retain timestamped frame comparisons and actual native key/editor-action results alongside shared journey results.
+
 Check real native geometry when newest content must remain above the composer or keyboard. A visibility matcher alone may not prove that a multiline paragraph fits within the usable viewport. Measure the complete padded composer dock, not only its inner editor. Include visible floating controls such as Latest in the usable touch area. A visible control with stable bounds can still be covered at its tap point. Record bounds in the platform's coordinate units and expose the target above both the dock and any covering floating control before tapping or typing. Require the expected dialog or native text read-back after the interaction.
 
 Keep screenshot baselines per target, OS and display configuration. Review expected, actual and diff images before accepting updates. A changed pixel scale, color space or capture API can invalidate a comparison without establishing a product regression. Do not lower thresholds or record all new images solely to make the suite green.
