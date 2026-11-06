@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reflex Pattern"
+  short_description: "Build Swift/Android apps with typed shared cores"
+  default_prompt: "Use $reflex-pattern to design or implement a shared Swift core with native Apple and Android hosts, typed contracts, persistence adapters and tested sync boundaries."

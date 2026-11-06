@@ -1,6 +1,6 @@
-# SRE skills
+# Agent skills
 
-Agent skills for investigating production behaviour and monitoring released changes.
+Reusable agent skills for native application architecture and production operations.
 
 ## Install
 
@@ -18,11 +18,27 @@ npx skills add ivanvanderbyl/skills --skill post-deploy-watch -a codex
 
 Add `-g` to install across projects. The repository uses the [Agent Skills format](https://agentskills.io/specification).
 
+To install the Reflex pattern skill for shared Swift cores and native Apple/Android apps:
+
+```sh
+npx skills add ivanvanderbyl/skills --skill reflex-pattern
+```
+
 ## Skills
 
 | Skill | Use it to |
 | --- | --- |
+| [reflex-pattern](skills/reflex-pattern/SKILL.md) | Design, build or migrate Swift/Android apps with typed core contracts, native persistence adapters, external APIs, offline/online sync and shared tests. |
 | [post-deploy-watch](skills/post-deploy-watch/SKILL.md) | Discover recent merges, verify production exposure, and run a dedicated watch for each PR for at least two complete business dates. |
+
+## Build native Swift and Android apps
+
+```text
+$reflex-pattern design a shared Swift core with SwiftData and Room adapters
+$reflex-pattern convert this iOS repository into an Apple/Android monorepo
+```
+
+The skill covers fresh projects, combining repositories and preserving an existing Apple package during migration. Its supporting references describe typed Swift/Kotlin contracts, native storage and migrations, sync recovery, API ownership, authentication, background work, platform services and testing. The guidance recommends architecture and verification steps; it does not supply a prebuilt application framework or sync engine.
 
 ## Start a watch
 
