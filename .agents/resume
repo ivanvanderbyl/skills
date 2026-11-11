@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Runs each time an orb wakes. Nothing here needs to reconnect or sign in, so
+# this only confirms that the toolchain .agents/setup installed is still present.
+set -euo pipefail
+
+swiftly_home="${SWIFTLY_HOME_DIR:-$HOME/.local/share/swiftly}"
+
+if [[ ! -x "$swiftly_home/bin/swift" ]]; then
+  echo "Swift is missing from $swiftly_home; run .agents/setup from the repository root." >&2
+  exit 1
+fi

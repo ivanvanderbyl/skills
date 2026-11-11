@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# Prepares an Amp orb for this repository. Amp runs it once on a fresh orb and
+# again on a stale snapshot, so every step checks before it installs.
+#
+# The skills themselves are Markdown plus one standard-library Python script,
+# which the base image already runs. Setup adds what the skills' own code needs
+# on Linux:
+#   - Swift, to run `swift test` on skills/duo-pattern/assets and the Reflex core
+#   - the matching Wasm Swift SDK and binaryen (wasm-opt), for the Reflex web
+#     target described in skills/reflex-pattern/references/web-target.md
+# Xcode, simulators and the Android toolchain live on the Mac satellite, which
+# this script does not reach.
+set -euo pipefail
+
+SWIFT_VERSION=6.4.2
+# From https://www.swift.org/api/v1/install/releases.json; changes with SWIFT_VERSION.
+WASM_SDK_CHECKSUM=83baca83553f8c443cda7b84800912e6e709c3acd2e7ebf277794ca5836c0da5
+WASM_SDK_ID="swift-${SWIFT_VERSION}-RELEASE_wasm"
+WASM_SDK_URL="https://download.swift.org/swift-${SWIFT_VERSION}-release/wasm-sdk/swift-${SWIFT_VERSION}-RELEASE/${WASM_SDK_ID}.artifactbundle.tar.gz"
+
+# binutils-gold, libedit-dev, pkg-config and zip are the Swift toolchain
+# dependencies the orb base image lacks; binaryen provides wasm-opt.
+APT_PACKAGES=(binutils-gold libedit-dev pkg-config zip binaryen)
+
+# Exported so swiftly installs where this script and .agents/resume look;
+# left unset, swiftly picks the location from the user database, not $HOME.
+export SWIFTLY_HOME_DIR="${SWIFTLY_HOME_DIR:-$HOME/.local/share/swiftly}"
+export SWIFTLY_BIN_DIR="$SWIFTLY_HOME_DIR/bin"
+export SWIFTLY_TOOLCHAINS_DIR="$SWIFTLY_HOME_DIR/toolchains"
+SWIFTLY_HOME="$SWIFTLY_HOME_DIR"
+
+step() {
+  local name="$1" started=$SECONDS
+  shift
+  echo "==> $name"
+  "$@"
+  echo "<== $name ($((SECONDS - started))s)"
+}
+
+install_apt_packages() {
+  local missing=() package
+  for package in "${APT_PACKAGES[@]}"; do
+    dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q 'ok installed' || missing+=("$package")
+  done
+  if ((${#missing[@]} == 0)); then
+    echo "already installed: ${APT_PACKAGES[*]}"
+    return
+  fi
+  sudo apt-get update -qq
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends "${missing[@]}"
+}
+
+install_swiftly() {
+  if [[ -x "$SWIFTLY_HOME/bin/swiftly" ]]; then
+    echo "already installed: $("$SWIFTLY_HOME/bin/swiftly" --version)"
+    return
+  fi
+  local download
+  download="$(mktemp -d)"
+  curl -fsSL "https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz" | tar -xz -C "$download"
+  # The profile hook is written by persist_environment, which also repairs it
+  # on a snapshot whose profile was regenerated.
+  "$download/swiftly" init --assume-yes --skip-install --no-modify-profile --quiet-shell-followup
+  rm -rf -- "$download"
+}
+
+install_toolchain() {
+  if [[ -d "$SWIFTLY_HOME/toolchains/$SWIFT_VERSION" ]]; then
+    echo "already installed: Swift $SWIFT_VERSION"
+  else
+    local post_install
+    post_install="$(mktemp -u)"
+    swiftly install "$SWIFT_VERSION" --assume-yes --post-install-file "$post_install"
+    # swiftly writes this file only when the system lacks packages the
+    # toolchain needs, which happens if the base image drops one.
+    if [[ -f "$post_install" ]]; then
+      sudo bash "$post_install"
+      rm -f -- "$post_install"
+    fi
+  fi
+  swiftly use "$SWIFT_VERSION" --global-default --assume-yes >/dev/null
+}
+
+install_wasm_sdk() {
+  if swift sdk list 2>/dev/null | grep -Fxq "$WASM_SDK_ID"; then
+    echo "already installed: $WASM_SDK_ID"
+    return
+  fi
+  swift sdk install "$WASM_SDK_URL" --checksum "$WASM_SDK_CHECKSUM"
+}
+
+# Amp and its tool shells start from a non-interactive login shell after setup,
+# so the toolchain has to be on that shell's PATH.
+persist_environment() {
+  local profile="$HOME/.bash_profile" hook=". '$SWIFTLY_HOME/env.sh'"
+  if grep -Fqx "$hook" "$profile" 2>/dev/null; then
+    echo "already in $profile"
+    return
+  fi
+  printf '\n# Swift toolchain (added by .agents/setup)\n%s\n' "$hook" >>"$profile"
+}
+
+step "apt packages" install_apt_packages
+step "swiftly" install_swiftly
+# The installer cannot update this running script's environment.
+# shellcheck disable=SC1091
+source "$SWIFTLY_HOME/env.sh"
+step "Swift $SWIFT_VERSION" install_toolchain
+step "Wasm Swift SDK" install_wasm_sdk
+step "login shell PATH" persist_environment
+
+swift --version 2>&1 | head -n 1
+echo "Setup finished in ${SECONDS}s"
