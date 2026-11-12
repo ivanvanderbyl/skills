@@ -1,0 +1,4 @@
+interface:
+  display_name: "Duo Pattern"
+  short_description: "Lay out folding-iPhone apps as a window over a path of panes"
+  default_prompt: "Use $duo-pattern to adapt this app for iPhone Duo so the closed pose shows the last pane, the open pose shows the last two, and folding keeps the pane the user was on."

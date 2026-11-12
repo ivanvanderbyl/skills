@@ -24,10 +24,17 @@ To install the Reflex pattern skill for shared Swift cores and native Apple/Andr
 npx skills add ivanvanderbyl/skills --skill reflex-pattern
 ```
 
+To install the Duo pattern skill for folding-iPhone layouts:
+
+```sh
+npx skills add ivanvanderbyl/skills --skill duo-pattern
+```
+
 ## Skills
 
 | Skill | Use it to |
 | --- | --- |
+| [duo-pattern](skills/duo-pattern/SKILL.md) | Lay out and navigate an app for iPhone Duo as a window over an ordered path of panes, so folding keeps the pane the user was on, with a tested Swift state owner and motion values fitted to the reference clip. |
 | [reflex-pattern](skills/reflex-pattern/SKILL.md) | Design, build, migrate or continue Swift/Android apps, and optionally a web app, with typed core contracts, native persistence adapters, external APIs, offline/online sync, shared tests and resumable project state. |
 | [post-deploy-watch](skills/post-deploy-watch/SKILL.md) | Discover recent merges, verify production exposure, and run a dedicated watch for each PR for at least two complete business dates. |
 
@@ -43,6 +50,17 @@ $reflex-pattern add a web target on the same core
 Each run starts from the project's `.reflex/` directory. The bundled `scripts/reflex_state.py` reports the phase and the next step, records each executed check per target with its evidence, marks a result stale when its sources change, and keeps decisions with IDs. A later run therefore continues from the files, with no chat history. The web target compiles the core to WebAssembly with JavaScriptKit's BridgeJS, which its authors mark experimental.
 
 The skill covers fresh projects, combining repositories and preserving an existing Apple package during migration. Its supporting references describe typed Swift/Kotlin contracts, native storage and migrations, sync recovery, API ownership, authentication, background work, platform services and testing. The guidance recommends architecture and verification steps; it does not supply a prebuilt application framework or sync engine.
+
+## Lay out an app for iPhone Duo
+
+```text
+$duo-pattern adapt this app's navigation for iPhone Duo
+$duo-pattern review this fold recording against the pattern
+```
+
+The skill encodes one rule: the app is a path of panes from general to specific, the closed device shows the last pane, the open device shows the last two, and a fold changes how many panes fit without changing which pane is last. `assets/PaneWindow.swift` implements that rule as a value type, and `assets/PaneWindowTests.swift` checks it against each clip in the Claude for iPhone Duo team's thread.
+
+The motion values come from a frame-by-frame fit of an explainer animation, not from a device. The fold APIs are listed by name from the iOS 27.3 SDK; only the closed pose was run on the simulator.
 
 ## Start a watch
 
