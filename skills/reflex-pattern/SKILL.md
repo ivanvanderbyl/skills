@@ -1,6 +1,6 @@
 ---
 name: reflex-pattern
-description: Builds, migrates or continues native iOS (Swift/SwiftUI) and Android (Kotlin/Compose) apps, and optionally a web app, around one shared Swift core with typed contracts and platform adapters, keeping resumable project state in `.reflex/`. Use for cross-platform app architecture, core extraction, persistence and sync boundaries, shared behaviour tests, visual, motion or input parity across platforms, or any work in a project that has a `.reflex/` directory. Not for a styling change or a platform API task that affects one platform only.
+description: Builds, migrates or continues native iOS (Swift/SwiftUI) and Android (Kotlin/Compose) apps, and optionally a web app, around one shared Swift core with typed contracts and platform adapters, keeping resumable project state in `.reflex/`. Use for cross-platform app architecture, core extraction, persistence and sync boundaries, shared behaviour tests, navigation and pane layout that stay the same on phones, foldables, tablets and web, visual, motion or input parity across platforms, or any work in a project that has a `.reflex/` directory. Not for a styling change or a platform API task that affects one platform only.
 ---
 
 # Reflex pattern for Swift, Android and web
@@ -55,6 +55,7 @@ Use these defaults when the project has no established equivalent:
 - Web, only when requested: the core compiled to WebAssembly behind a BridgeJS façade, with persistence and network as TypeScript adapters.
 - External services: one declared owner per operation, either portable Swift transport or a native host adapter.
 - Sync: per-feature online-only, cached-read or durable queued-write policy, with one coordinator and native scheduling.
+- Navigation, when any target can show two screens side by side: the core owns one window over an ordered path of panes, and each host reports only its width.
 - Repository layout: one monorepo containing the Swift package, the apps, SwiftJava build integration and shared test fixtures.
 - Shared product tests: one e2e suite using `e2e` and `@e2e-dev/mobile`, with an explicit target per surface.
 - Fast platform-specific tests: Swift Testing/XCTest and Kotlin JUnit. Use native device or instrumentation tests where OS or JNI behaviour is required.
@@ -71,6 +72,7 @@ Use SwiftJava for the in-process Swift/Kotlin boundary regardless of core size. 
 - HTTP/RPC, authentication, streams, retries and background transfers: [External APIs](references/external-apis.md)
 - Swift cross-compilation, JNI, actors and packaging: [Swift on Android](references/swift-on-android.md)
 - A web surface on the same core: [Optional web target](references/web-target.md)
+- Designing or reviewing navigation, or layout for a foldable, tablet, resizable window or desktop browser: [Pane layout and navigation](references/pane-navigation.md)
 - Permissions, OS lifecycle, files, payments, identity and native capabilities: [Platform services](references/platform-services.md)
 - Contract, repository, sync, native and shared UI tests: [Shared tests](references/shared-tests.md)
 - Animation, effects, streaming text, scrolling or keyboard parity: [Motion and native input](references/motion-and-input.md)

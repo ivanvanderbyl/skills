@@ -49,6 +49,8 @@ $reflex-pattern add a web target on the same core
 
 Each run starts from the project's `.reflex/` directory. The bundled `scripts/reflex_state.py` reports the phase and the next step, records each executed check per target with its evidence, marks a result stale when its sources change, and keeps decisions with IDs. A later run therefore continues from the files, with no chat history. The web target compiles the core to WebAssembly with JavaScriptKit's BridgeJS, which its authors mark experimental.
 
+Its design guideline for navigation is the Duo pattern's rule applied to every target: the core owns one window over an ordered path of panes, and each host sets how many panes fit from its width. The iPhone rule is checked against the reference clips; the Android and web mapping is taken from vendor documentation and has not been run on a device.
+
 The skill covers fresh projects, combining repositories and preserving an existing Apple package during migration. Its supporting references describe typed Swift/Kotlin contracts, native storage and migrations, sync recovery, API ownership, authentication, background work, platform services and testing. The guidance recommends architecture and verification steps; it does not supply a prebuilt application framework or sync engine.
 
 ## Lay out an app for iPhone Duo
