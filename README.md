@@ -18,7 +18,7 @@ npx skills add ivanvanderbyl/skills --skill post-deploy-watch -a codex
 
 Add `-g` to install across projects. The repository uses the [Agent Skills format](https://agentskills.io/specification).
 
-To install the Reflex pattern skill for shared Swift cores and native Apple/Android apps:
+To install the Reflex pattern skill for shared Swift cores and native Apple/Android apps, with an optional web target:
 
 ```sh
 npx skills add ivanvanderbyl/skills --skill reflex-pattern
@@ -28,7 +28,7 @@ npx skills add ivanvanderbyl/skills --skill reflex-pattern
 
 | Skill | Use it to |
 | --- | --- |
-| [reflex-pattern](skills/reflex-pattern/SKILL.md) | Design, build or migrate Swift/Android apps with typed core contracts, native persistence adapters, external APIs, offline/online sync and shared tests. |
+| [reflex-pattern](skills/reflex-pattern/SKILL.md) | Design, build, migrate or continue Swift/Android apps, and optionally a web app, with typed core contracts, native persistence adapters, external APIs, offline/online sync, shared tests and resumable project state. |
 | [post-deploy-watch](skills/post-deploy-watch/SKILL.md) | Discover recent merges, verify production exposure, and run a dedicated watch for each PR for at least two complete business dates. |
 
 ## Build native Swift and Android apps
@@ -36,7 +36,11 @@ npx skills add ivanvanderbyl/skills --skill reflex-pattern
 ```text
 $reflex-pattern design a shared Swift core with SwiftData and Room adapters
 $reflex-pattern convert this iOS repository into an Apple/Android monorepo
+$reflex-pattern continue this project
+$reflex-pattern add a web target on the same core
 ```
+
+Each run starts from the project's `.reflex/` directory. The bundled `scripts/reflex_state.py` reports the phase and the next step, records each executed check per target with its evidence, marks a result stale when its sources change, and keeps decisions with IDs. A later run therefore continues from the files, with no chat history. The web target compiles the core to WebAssembly with JavaScriptKit's BridgeJS, which its authors mark experimental.
 
 The skill covers fresh projects, combining repositories and preserving an existing Apple package during migration. Its supporting references describe typed Swift/Kotlin contracts, native storage and migrations, sync recovery, API ownership, authentication, background work, platform services and testing. The guidance recommends architecture and verification steps; it does not supply a prebuilt application framework or sync engine.
 

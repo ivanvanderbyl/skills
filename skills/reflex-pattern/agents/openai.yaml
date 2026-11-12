@@ -1,4 +1,4 @@
 interface:
   display_name: "Reflex Pattern"
-  short_description: "Build Swift/Android apps with typed shared cores"
-  default_prompt: "Use $reflex-pattern to build or continue a SwiftJava-based Swift/Android monorepo with native adapters, shared e2e mobile journeys, native unit tests and maintained project decisions and evidence."
+  short_description: "Build Swift/Android/web apps on one typed shared core"
+  default_prompt: "Use $reflex-pattern to build or continue a Swift/Android app on a shared Swift core, with an optional web target, starting from the project's .reflex state and recording each check and decision."

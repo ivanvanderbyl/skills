@@ -1,10 +1,6 @@
 # Typed native contracts with SwiftJava
 
-Read this reference when a Swift core exchanges actions, state, effects or
-results with Kotlin. Use SwiftJava-generated bindings for this in-process API.
-Keep network protocols, stored records and headless JSON projections separate.
-This reference describes an architecture and an illustrative API. It does not
-establish that a particular type graph builds or runs on Android.
+Read this reference when a Swift core exchanges actions, state, effects or results with Kotlin. Use SwiftJava-generated bindings for this in-process API. Keep network protocols, stored records and headless JSON projections separate. This reference describes an architecture and an illustrative API. It does not establish that a particular type graph builds or runs on Android.
 
 ## Select the contract for each boundary
 
@@ -24,30 +20,15 @@ Kotlin/Compose -> generated Java API -> JNI -> compiled Swift façade -> Swift c
 SwiftUI        -> Swift API                                      -> Swift core
 ```
 
-SwiftJava generates the interop glue. It does not require a `.proto` schema, an
-RPC server, a generic `dispatch(String)` method or JSON-encoded state. Core size
-does not change this choice. Use the official
-[Swift Android examples](https://github.com/swiftlang/swift-android-examples#readme)
-as the integration starting point. Use `jextract --mode=jni` for Android.
+SwiftJava generates the interop glue. It does not require a `.proto` schema, an RPC server, a generic `dispatch(String)` method or JSON-encoded state. Core size does not change this choice. Use the official [Swift Android examples](https://github.com/swiftlang/swift-android-examples#readme) as the integration starting point. Use `jextract --mode=jni` for Android.
 
 ## Shape the Swift façade for native callers
 
-Expose typed actions, state snapshots, effect requests, completion events and
-expected failures. Use Swift value types and enums with associated values where
-the pinned generator supports them. SwiftJava generates Java wrappers that Kotlin
-can consume; it does not promise Kotlin data classes or sealed hierarchies.
-Keep JNI implementation details and arena handling inside a small Kotlin adapter.
+Expose typed actions, state snapshots, effect requests, completion events and expected failures. Use Swift value types and enums with associated values where the pinned generator supports them. SwiftJava generates Java wrappers that Kotlin can consume; it does not promise Kotlin data classes or sealed hierarchies. Keep JNI implementation details and arena handling inside a small Kotlin adapter.
 
-Reuse portable domain types when their semantics and generated API fit. Add
-dedicated bridge types only where export limitations or a public compatibility
-boundary require them. Keep Room entities, SwiftData managed objects and service
-DTOs behind their adapters. Use distinct domain IDs and validate their raw
-representation before mutation.
+Reuse portable domain types when their semantics and generated API fit. Add dedicated bridge types only where export limitations or a public compatibility boundary require them. Keep Room entities, SwiftData managed objects and service DTOs behind their adapters. Use distinct domain IDs and validate their raw representation before mutation.
 
-This Swift API sketch shows typed values and effects for a record rename. A
-concrete exported session/factory would implement the interface and own its
-runtime. Initializers, generated Java names and ownership depend on the selected
-public API and generator; this is not a complete binding sample.
+This Swift API sketch shows typed values and effects for a record rename. A concrete exported session/factory would implement the interface and own its runtime. Initializers, generated Java names and ownership depend on the selected public API and generator; this is not a complete binding sample.
 
 ```swift
 public struct RecordID {
@@ -113,37 +94,22 @@ public protocol RecordSession {
 }
 ```
 
-Add an explicit observation/effect-delivery API for the feature. Keep state
-transitions in the production owner. Do not reconstruct the
-reducer in Kotlin to make a wrapper easier to generate.
+Add an explicit observation/effect-delivery API for the feature. Keep state transitions in the production owner. Do not reconstruct the reducer in Kotlin to make a wrapper easier to generate.
 
 ## Preserve operation identity and validation
 
 Give each identifier a defined lifetime:
 
 - Correlation ID associates a call with responses and diagnostics when needed.
-- Operation ID identifies a logical mutation. Persist it and reuse it through
-  retries when the server supports idempotency.
+- Operation ID identifies a logical mutation. Persist it and reuse it through retries when the server supports idempotency.
 - Account/session generation invalidates work from an earlier account or session.
-- Request generation distinguishes replaceable work, such as the latest search.
-  Keep it distinct from entity revisions and durable operation identity.
+- Request generation distinguishes replaceable work, such as the latest search. Keep it distinct from entity revisions and durable operation identity.
 
-Omit account metadata when the product has no account concept; retain its session
-and operation ownership. Preserve opaque server revisions as opaque values.
+Omit account metadata when the product has no account concept; retain its session and operation ownership. Preserve opaque server revisions as opaque values.
 
-Carry the initiating context through callbacks. Do not stamp an old result with
-the current account or generation. Match its operation and expected phase before
-applying it. Ignore stale presentation events; reconcile durable acknowledgements
-against the correct operation ledger even after its screen closes.
+Carry the initiating context through callbacks. Do not stamp an old result with the current account or generation. Match its operation and expected phase before applying it. Ignore stale presentation events; reconcile durable acknowledgements against the correct operation ledger even after its screen closes.
 
-Validate IDs, ranges, required values, account access, cross-field constraints
-and action eligibility before mutation. Generated type safety does not establish
-product validity. Return a typed failure and leave state unchanged on rejection.
-Keep diagnostics redacted; omit credentials and raw service response bodies.
-Check expected local revisions inside the actual storage transaction. Emit local
-acceptance only after commit. Cancellation does not prove that a remote write
-was undone. See [Persistence and sync](persistence-and-sync.md) and
-[External APIs](external-apis.md).
+Validate IDs, ranges, required values, account access, cross-field constraints and action eligibility before mutation. Generated type safety does not establish product validity. Return a typed failure and leave state unchanged on rejection. Keep diagnostics redacted; omit credentials and raw service response bodies. Check expected local revisions inside the actual storage transaction. Emit local acceptance only after commit. Cancellation does not prove that a remote write was undone. See [Persistence and sync](persistence-and-sync.md) and [External APIs](external-apis.md).
 
 ## Define value semantics across the binding
 
@@ -157,69 +123,34 @@ was undone. See [Persistence and sync](persistence-and-sync.md) and
 | Collection or binary data | Verify supported element types, ordering, copying and size limits. Pass attachment IDs instead of large file contents in state. |
 | Mutable value | Publish a deliberate snapshot or command API. Do not assume Kotlin references reproduce Swift value-copy semantics. |
 
-Reserve arbitrary JSON for genuinely open product data, such as a user-authored
-document, with its own validation policy. An interactive JSON artifact can remain
-JSON content while its actions, runtime identity and state access use typed native
-bindings. Keep raw dictionaries and serialized action names out of normal UI code.
+Reserve arbitrary JSON for genuinely open product data, such as a user-authored document, with its own validation policy. An interactive JSON artifact can remain JSON content while its actions, runtime identity and state access use typed native bindings. Keep raw dictionaries and serialized action names out of normal UI code.
 
 ## Async, callbacks and ownership
 
-Follow [Swift on Android](swift-on-android.md) for generation and packaging.
-SwiftJava documents `async` exports as Java futures, including a
-`CompletableFuture` mode usable with Kotlin's `await()` extension. Verify the
-project's minimum Android API, future mode and coroutine dependencies.
+Follow [Swift on Android](swift-on-android.md) for generation and packaging. SwiftJava documents `async` exports as Java futures, including a `CompletableFuture` mode usable with Kotlin's `await()` extension. Verify the project's minimum Android API, future mode and coroutine dependencies.
 
-Use generated protocol interfaces for Kotlin-implemented ports only after proving
-their exact requirements. Otherwise, pass typed effect requests and completion
-events through the façade. Keep Room work in Kotlin's native coroutine/transaction
-boundary. A synchronous callback must not use `runBlocking` on the UI thread to
-wait for work that needs that same thread.
+Use generated protocol interfaces for Kotlin-implemented ports only after proving their exact requirements. Otherwise, pass typed effect requests and completion events through the façade. Keep Room work in Kotlin's native coroutine/transaction boundary. A synchronous callback must not use `runBlocking` on the UI thread to wait for work that needs that same thread.
 
-Define native lifetime with the generated `SwiftArena` API for the pinned release.
-Keep returned objects alive through their observers and in-flight work. Close only
-after cancelling or draining those users. Compose recomposition does not own a new
-arena/session. Verify duplicate close, callback-after-close and cancelled handoff.
+Define native lifetime with the generated `SwiftArena` API for the pinned release. Keep returned objects alive through their observers and in-flight work. Close only after cancelling or draining those users. Compose recomposition does not own a new arena/session. Verify duplicate close, callback-after-close and cancelled handoff.
 
-Specify coroutine-to-Swift cancellation, observer teardown, callback executor,
-MainActor scheduling, buffering and backpressure explicitly. A generated future
-or `@ThreadSafe` annotation does not establish these policies. Do not assume
-`AsyncSequence` becomes Kotlin `Flow`; write and test an adapter using supported
-bindings when needed.
+Specify coroutine-to-Swift cancellation, observer teardown, callback executor, MainActor scheduling, buffering and backpressure explicitly. A generated future or `@ThreadSafe` annotation does not establish these policies. Do not assume `AsyncSequence` becomes Kotlin `Flow`; write and test an adapter using supported bindings when needed.
 
 ## Build compatibility and migration
 
-Pin SwiftJava, its Java/native support libraries and the compiler/Android SDK
-matrix. Generate wrappers and JNI from the same Swift source revision; do not hand
-edit them. Check regeneration for drift and rebuild consumers when the public API
-changes. SwiftJava is pre-1.0 in the examined release, so check the selected
-release's guarantees and feature support before upgrading. Keep wrapper, runtime
-and native library identities aligned in packaged artifacts.
+Pin SwiftJava, its Java/native support libraries and the compiler/Android SDK matrix. Generate wrappers and JNI from the same Swift source revision; do not hand edit them. Check regeneration for drift and rebuild consumers when the public API changes. SwiftJava is pre-1.0 in the examined release, so check the selected release's guarantees and feature support before upgrading. Keep wrapper, runtime and native library identities aligned in packaged artifacts.
 
-For co-shipped hosts and core, verify artifact/build identity rather than adding
-a wire-version handshake. Test source/binary compatibility separately if the
-library is independently distributed. A generated wrapper does not establish
-compatibility with an unrelated native binary.
+For co-shipped hosts and core, verify artifact/build identity rather than adding a wire-version handshake. Test source/binary compatibility separately if the library is independently distributed. A generated wrapper does not establish compatibility with an unrelated native binary.
 
 When replacing an existing Protobuf/JSON dispatcher:
 
 1. Inventory current actions, states, effects, errors and public consumers.
-2. Add a typed Swift façade over the same production owner. Prove its generated
-   type graph in a small Kotlin consumer before moving every feature.
-3. Migrate Kotlin calls and platform ports in vertical slices. Run existing
-   behaviour expectations through the native path, including async failures and
-   lifecycle cleanup.
-4. Retire the internal codec/byte dispatcher once migrated callers and required
-   compatibility checks pass. Keep any supported CLI projection, external API
-   format and durable payload migrations independently intact.
+2. Add a typed Swift façade over the same production owner. Prove its generated type graph in a small Kotlin consumer before moving every feature.
+3. Migrate Kotlin calls and platform ports in vertical slices. Run existing behaviour expectations through the native path, including async failures and lifecycle cleanup.
+4. Retire the internal codec/byte dispatcher once migrated callers and required compatibility checks pass. Keep any supported CLI projection, external API format and durable payload migrations independently intact.
 
-If a Swift feature cannot be exported, first narrow the façade or use concrete
-types and typed effect delivery. Record the exact remaining blocker and justify
-an alternative interop path if one is required. Do not silently restore a generic
-JSON/Protobuf dispatcher to claim the SwiftJava migration is complete.
+If a Swift feature cannot be exported, first narrow the façade or use concrete types and typed effect delivery. Record the exact remaining blocker and justify an alternative interop path if one is required. Do not silently restore a generic JSON/Protobuf dispatcher to claim the SwiftJava migration is complete.
 
-Retain schemas where data must outlive a process or cross a network. Apply the
-chosen format's presence, unknown-value, numeric and evolution rules there. A
-native API refactor is not a database migration or an API protocol upgrade.
+Retain schemas where data must outlive a process or cross a network. Apply the chosen format's presence, unknown-value, numeric and evolution rules there. A native API refactor is not a database migration or an API protocol upgrade.
 
 ## Primary references
 
@@ -227,5 +158,4 @@ native API refactor is not a database migration or an API protocol upgrade.
 - [Feature documentation at the examined 0.7.0 tag](https://github.com/swiftlang/swift-java/blob/0.7.0/Sources/SwiftJavaDocumentation/Documentation.docc/FeaturesJextract.md)
 - [Official weather example: async calls and Kotlin-implemented protocol](https://github.com/swiftlang/swift-android-examples/tree/main/swift-java-weather-app)
 
-Use the project's pinned release documentation when it differs from these
-examples. Confirm installed-app behaviour independently of documentation claims.
+Use the project's pinned release documentation when it differs from these examples. Confirm installed-app behaviour independently of documentation claims.
