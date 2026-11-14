@@ -206,6 +206,25 @@ struct WritePathSimulationTests {
         #expect(totals.applied > 0 && totals.rejected > 0 && totals.kills > 0)
     }
 
+    @Test("All rules hold when the user keeps editing through long offline periods")
+    func allRulesHoldOffline() {
+        var faults = Faults()
+        faults.goOffline = 0.01
+        var totals = Outcome()
+        for seed in UInt64(1)...150 {
+            let outcome = simulate(seed: seed, faults: faults)
+            #expect(outcome.passed, "seed \(seed)")
+            totals.intentsWhileOffline += outcome.intentsWhileOffline
+            totals.kills += outcome.kills
+        }
+        #expect(totals.intentsWhileOffline > 0 && totals.kills > 0)
+
+        // The control: with the outbox in memory, edits made offline do not survive a kill.
+        var inMemory = Rules()
+        inMemory.outboxIsDurable = false
+        #expect(!failingSeeds(in: 1...20, rules: inMemory, faults: faults).isEmpty)
+    }
+
     // The two single seeds were found by scanning 20,000 seeds with `failingSeeds`.
     // Those rules fail too rarely to catch with a small range. Scan again after
     // changing the world or the faults: every pinned seed moves.

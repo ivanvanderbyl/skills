@@ -96,7 +96,8 @@ public struct Rules: Sendable {
     public var outboxIsDurable = true
     /// 3. The acknowledgement's row and the outbox settlement are one write.
     public var acknowledgementCarriesRow = true
-    /// 4. A row is replaced only by a newer server revision.
+    /// 4. A row is replaced only by a newer server revision. This needs a true revision:
+    /// a timestamp can run backwards, and this rule then refuses the row the user just wrote.
     public var onlyNewerRevisionsReplace = true
     /// 5. A fetch that was in flight when an acknowledgement landed may not touch that row.
     public var fetchInFlightSkipsAcknowledgedRows = true

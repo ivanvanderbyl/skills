@@ -2,7 +2,7 @@
 
 Read this reference when a feature keeps server data on the device and lets the user change it: a list that must stay fresh, an edit that must survive an app kill or an offline period, or a view that must never flip between a local and a server value. It gives one design for the path from a tap to the store, the server and back, the reason for each rule, and the tests that prove a project's own core follows them. [Persistence and sync](persistence-and-sync.md) covers each native store, runner claims, account scope and scheduling.
 
-The rules were found and checked with the seeded simulation in `assets/`, on a model core for one resource, with Swift 6.4.2 on Linux and macOS. That is evidence about the rules. It says nothing about a project's store, backend or devices. The browser store notes were observed with TanStack DB 1.0.0-rc.1.5 in Chromium only.
+The rules were found and checked with the seeded simulation in `assets/`, on a model core for one resource, with Swift 6.4.2 on Linux and macOS. That is evidence about the rules. It says nothing about a project's store, backend or devices. One run then drove the same rules against a real API server and database, with the client store and the network faults still simulated and no creates. Rules 1, 2, 3 and 8 were needed there too, and rule 4 failed because a timestamp stood in for the revision. The browser store notes were observed with TanStack DB 1.0.0-rc.1.5 in Chromium only.
 
 Contents: the shape; the write path; the eight rules; what the server must provide; remote changes; store adapters; decisions to make per app; the bundled model; test strategies; limits.
 
@@ -66,7 +66,7 @@ Each rule exists because the simulation fails without it. The text after each ru
 1. **Rows hold only what the server confirmed; a pending edit is an outbox record laid over its row in the view.** Written into the row, the edit is reverted by the next fetch that predates it. This failed in almost every run.
 2. **The outbox is in the store, and a write is sent only after its outbox record is committed.** Kept in memory, an edit the user saw accepted is lost when the app is killed, and so is the record that the server rejected one.
 3. **The acknowledgement carries the server's row, and settling the outbox record and storing that row are one `StoreWrite`.** Settled alone, the overlay disappears before the row arrives, and the view shows the old value until the next fetch.
-4. **A row is replaced only by a newer server revision.** Answers arrive out of order, and an older one would move a row backwards.
+4. **A row is replaced only by a newer server revision.** Answers arrive out of order, and an older one would move a row backwards. This rule is safe only with a true revision; "What the server must provide" says what a timestamp does to it.
 5. **A fetch that was in flight when an acknowledgement landed may not touch that row; the core fetches again.** That fetch may have read the server before the write applied, so its copy of the row is older than the acknowledgement, and for a new row it is missing.
 6. **A create whose row has appeared in confirmed rows counts as applied, even if its acknowledgement never arrived.** Otherwise, when someone deletes that row, the pending create draws it again as a new row.
 7. **Only a list answer brings back a row that a list answer removed.** An acknowledgement written before a deletion can arrive after the list that reported the deletion. The core keeps a mark for each row a list removed, does not apply such an acknowledgement, and asks for the list again.
@@ -74,20 +74,22 @@ Each rule exists because the simulation fails without it. The text after each ru
 
 Rules 6 and 7 each failed in fewer than 1 run in 1,000. Manual testing and a handful of unit tests do not find failures that rare, which is the reason for the simulation below.
 
+Rules 4, 5 and 7 overlap, so a short run can pass without one of them. For a row that already exists, rule 4 refuses most of what rule 5 guards against, and with creates turned off in the model rule 5's control failed about 1 run in 5,000 and rule 7's about 1 in 2,500. Forty seeds against a real backend showed neither failing, which is what those rates predict. Do not drop a rule because a short run passed without it; scan enough seeds to see its control fail.
+
 The model also depends on these, which have no control of their own: one envelope in flight per row, holding its writes in order; a write ID the server answers the same way every time; a hint that names a row fetching that row alone; and a store that applies writes in the order issued.
 
 In a project, the unit sent in order is the aggregate whose writes depend on each other, such as a record with its child rows, not always one row.
 
 ## What the server must provide
 
-- **A revision on each row, raised in the same transaction as every change to it.** Rule 4 compares it. A timestamp taken from an application server's clock is not a revision: two servers can order two changes wrongly.
-- **Writes that carry a client-chosen write ID and never apply one twice.** A repeated write reports its outcome again.
-- **An acknowledgement that returns the row as it stands after the write.** Rule 3 stores it.
+- **A revision on each row, raised in the same transaction as every change to it.** Rule 4 compares it. A timestamp taken from an application server's clock is not a revision. Two servers can order two changes wrongly, and one server can too when it reads the clock before it takes the row's lock. With a timestamp, rule 4 does harm: the user's second edit commits after their first but is stamped earlier, the core refuses the acknowledged row as older while settling its outbox record, and the view shows the first edit with no pending mark until some later change carries a higher stamp. This was observed against a real backend with one server's clock 250 ms behind, and it reproduces in the model by hand.
+- **Writes that carry a client-chosen write ID and never apply one twice.** A repeated write reports its outcome again. Without it, a retry after a lost acknowledgement applies the write a second time, and was observed overwriting a change another writer had made in between.
+- **An acknowledgement that returns the row as it stands after the write.** Rule 3 stores it. This includes a delete or a cancel. An answer of bare success forces a separate read, which can already hold a later writer's change, and it hides a write that changed nothing.
 - **A list answer that is complete for its scope, or says that it is not.** The model reads absence from the list as removal. A paged or windowed read cannot be read that way; follow "Pull deltas and resolve conflicts" in [Persistence and sync](persistence-and-sync.md).
 
 A marker on each list answer for "as of which revision" is not needed. An earlier form of rule 7 used one; the local mark replaced it and passed the same runs. Revisions on hints are optional and let the core skip a fetch for a change it already has.
 
-Record which of these the backend lacks before choosing a queued-write policy. Without a row revision or a repeat-safe write ID, keep the operation online-only.
+Record which of these the backend lacks before choosing a queued-write policy. Without a repeat-safe write ID, keep the operation online-only. Without a true revision, either keep it online-only, or turn rule 4 off for that resource and store each answer as it arrives: the model still converges that way, and a row can briefly show an older value when answers arrive out of order.
 
 ## Remote changes are hints
 
@@ -150,7 +152,7 @@ None of these is in the model or was simulated. Settle each before the first dur
 
 `assets/DataLayerCore.swift` is the core for one resource, with no imports: the eight rules as flags in `Rules`, the overlay, and the `load`, `commit`, `send`, `fetch`, `fetchRow` and `startTimer` effects. It has no `watch` and no `subscribeRemote`. `assets/WritePathSimulation.swift` is the harness. `assets/DataLayerTests.swift` holds the tests. Read the core as the worked example of the rules. It is not a sync engine: titles are integers, there is one resource, and a row is the unit of sending.
 
-To run it, put the first two files in a module named `DataLayerModel` and the third in its test target, then run `swift test` with a Swift 6 toolchain. Expect 11 tests in 2 suites to pass.
+To run it, put the first two files in a module named `DataLayerModel` and the third in its test target, then run `swift test` with a Swift 6 toolchain. Expect 12 tests in 2 suites to pass.
 
 The overlay is the code to copy first. Confirmed rows are never edited to show pending state:
 
@@ -212,11 +214,19 @@ Hand-driven tests only cover the interleavings someone thought of. The simulatio
 - **Check after every step:** the user's pending edit is in the view; no row shows an older revision than it did; no removed row comes back. **Check at the end:** store, view and server agree, the outbox is empty, every accepted write was applied or rejected, and every rejection is still reported.
 - **Give each rule a flag and a control.** The control turns one rule off and must fail, and the same seeds must pass with the rule on. A rule whose control cannot be made to fail is not shown to be needed: remove it, or find the fault that needs it.
 - **Assert the run did what it claims.** Count kills, applied writes and rejections and require each to be above zero, so a change that silences the faults cannot pass.
+- **Include long offline periods.** While offline no send or fetch reaches the server and no hint arrives, and the user keeps editing and the app is still killed. Set `goOffline` in `Faults`. All rules held in the model through such periods, and the controls for rules 1 and 2 failed.
 - **Scan wide, then pin.** Run tens of thousands of seeds in a release build when a rule changes. Pin the first failing seed of a rare control in the test suite, and scan again after any change to the world, because every pinned seed moves.
 - **Trace a failing seed before changing the core.** First decide whether the check is wrong. Then find the exact order of events; a fix written from a guess at the cause can leave the control failing on the same seeds.
 - **Count what is lost by design.** Edits made within one commit of a kill never reach the store. Report that number separately instead of excluding those edits without saying so.
 
 To use the harness on a project's core, replace `DataCore` with that core, keep the faults and checks, and write one control per rule the project adds.
+
+Then run the same harness against the real server, with the client store and the faults still simulated. The fake server assumes what the rules need, so only a real one shows what is missing. In that run:
+
+- record commit order in the database, for example with an audit trigger, and compare it with the revision the API returns;
+- count writes the server applied more than once after a retry;
+- put two server instances behind the client with one clock set behind;
+- keep the controls, because a seed does not replay exactly against a live server and a control is then the only evidence that a rule mattered.
 
 ### One conformance fixture for every store adapter
 
@@ -243,4 +253,5 @@ Record each layer as its own check per target with `receipt`. The simulation and
 - Its server answers each write on its own. An all-or-nothing envelope that is partly rejected and resent was not simulated.
 - A failed commit, a second writer, backoff and authentication were not simulated.
 - Time is counted in steps, not seconds.
-- No real store, network or device took part. Prove those with the fixture and the loop test.
+- In the simulation no real store, network or device took part. Prove those with the fixture and the loop test.
+- The run against a real backend was one backend, with a simulated client store, no creates, a timestamp as the revision and 30 to 190 seeds per case.

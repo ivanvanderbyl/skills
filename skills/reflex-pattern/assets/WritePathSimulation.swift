@@ -27,6 +27,10 @@ struct Faults {
     var hintDrop = 0.1
     var kill = 0.005
     var serverRejects = 0.03
+    /// Chance per step that the device goes offline, and how long it stays so. While offline no
+    /// send or fetch reaches the server and no hint arrives. The user keeps editing.
+    var goOffline = 0.0
+    var offlineSteps = 60
 }
 
 struct Outcome {
@@ -41,6 +45,7 @@ struct Outcome {
     var rejected = 0
     var lostNearKill = 0  // edits made within 2 steps of a kill, before their outbox record was durable: lost by design
     var kills = 0
+    var intentsWhileOffline = 0
     var passed: Bool { !failed }
     var failed: Bool {
         notConverged || lostWrites > 0 || ownWriteReverted > 0 || rowWentBackwards > 0 || rowCameBack > 0
@@ -92,6 +97,8 @@ final class World {
     var intents: [Int: (rowID: Int, madeAt: Int)] = [:]
     var rowWrites: [Int: [Int]] = [:]
     var killTimes: [Int] = []
+    var offlineUntil = 0
+    var isOffline: Bool { t < offlineUntil }
     // What the view has shown since the last start.
     var lastBase: [Int: Int] = [:]
     var shown: Set<Int> = []
@@ -152,6 +159,7 @@ final class World {
 
     func remoteChanged(_ rowID: Int) {
         clock += 1
+        if isOffline { return }
         if !fault(faults.hintDrop) { schedule(.event(.hint(rowID: rowID)), at: t + rng.int(1...3), anyEpoch: true) }
     }
 
@@ -161,6 +169,14 @@ final class World {
     }
 
     func handle(_ request: Request) {
+        if isOffline {
+            switch request {
+            case let .fetch(id, requestEpoch): respond(.didFailFetch(requestID: id), epoch: requestEpoch)
+            case let .fetchRow(id, requestEpoch, _): respond(.didFailFetchRow(requestID: id), epoch: requestEpoch)
+            case let .send(id, requestEpoch, _, _): respond(.didFailSend(requestID: id), epoch: requestEpoch)
+            }
+            return
+        }
         switch request {
         case let .fetch(id, requestEpoch):
             if fault(faults.fetchFail) {
@@ -242,6 +258,8 @@ final class World {
     func step() {
         if t < activeSteps {
             if core.loaded, rng.chance(faults.kill) { kill() }
+            // Checked only when the fault is on, so runs without it draw the same random numbers.
+            if faults.goOffline > 0, !isOffline, rng.chance(faults.goOffline) { offlineUntil = t + faults.offlineSteps }
             // Other people change the server.
             if rng.chance(0.05), !serverRows.isEmpty {
                 let id = pick(serverRows.keys.sorted())
@@ -272,6 +290,7 @@ final class World {
                 }
                 nextWrite += 1
                 intents[mutation.writeID] = (mutation.rowID, t)
+                if isOffline { outcome.intentsWhileOffline += 1 }
                 rowWrites[mutation.rowID, default: []].append(mutation.writeID)
                 run(core.handle(.intent(mutation)))
             }
