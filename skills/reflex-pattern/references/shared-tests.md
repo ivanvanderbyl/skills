@@ -47,7 +47,7 @@ Define semantic repository cases once and execute them through both real adapter
 
 Test SwiftData upgrades from representative released store versions and Room upgrades with retained exported schemas and the supported migration helper. Check actual values, relationships, pending commands, tombstones and checkpoints, not only successful container/database creation. Use synthetic fixture data. Use on-disk/process-restart checks for durability claims rather than substituting an in-memory database.
 
-For queued writes and delta sync, select cases from these distinct failure boundaries:
+For the core's write path, [Data layer and sync strategy](data-layer.md) adds a seeded simulation with one failing control per rule and one conformance fixture replayed against every store adapter. For queued writes and delta sync, select cases from these distinct failure boundaries:
 
 | Boundary | Observable result |
 | --- | --- |
