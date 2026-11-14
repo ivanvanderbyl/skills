@@ -37,7 +37,7 @@ The facts below were observed with Swift 6.4.2, its matching `wasm` Swift SDK an
 
 ## Platform adapters on the web
 
-Persistence, network, credentials and scheduling stay host adapters, as on the native apps: implement the façade's port protocols in TypeScript over IndexedDB, `fetch` and the browser's storage and lifecycle events. Apply the same repository contract and sync policy as the native stores. A tab can be discarded at any time, so durable queued writes must be committed before the UI reports them saved.
+Persistence, network, credentials and scheduling stay host adapters, as on the native apps: implement the façade's port protocols in TypeScript over IndexedDB, `fetch` and the browser's storage and lifecycle events. Apply the same repository contract and sync policy as the native stores. The store adapter must write rows, outbox and checkpoint in one transaction; "A browser store" in [Data layer and sync strategy](data-layer.md) says which browser stores can and what a collection library was observed to do instead. A tab can be discarded at any time, so durable queued writes must be committed before the UI reports them saved.
 
 ## Size and build time
 

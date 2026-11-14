@@ -54,7 +54,7 @@ Use these defaults when the project has no established equivalent:
 - Android persistence: Room or the existing store behind the same semantic repository contract.
 - Web, only when requested: the core compiled to WebAssembly behind a BridgeJS façade, with persistence and network as TypeScript adapters.
 - External services: one declared owner per operation, either portable Swift transport or a native host adapter.
-- Sync: per-feature online-only, cached-read or durable queued-write policy, with one coordinator and native scheduling.
+- Sync: per-feature online-only, cached-read or durable queued-write policy, with one coordinator and native scheduling. A queued write is an outbox record that the core lays over the server-confirmed row in its view; it is never written into that row.
 - Navigation, when any target can show two screens side by side: the core owns one window over an ordered path of panes, and each host reports only its width.
 - Repository layout: one monorepo containing the Swift package, the apps, SwiftJava build integration and shared test fixtures.
 - Shared product tests: one e2e suite using `e2e` and `@e2e-dev/mobile`, with an explicit target per surface.
@@ -69,6 +69,7 @@ Use SwiftJava for the in-process Swift/Kotlin boundary regardless of core size. 
 - Domain state, effects, lifecycle and headless introspection: [Core and contract](references/core-and-contract.md)
 - SwiftJava API types, platform ports, compatibility and serialized data boundaries: [Typed contracts](references/typed-contracts.md)
 - SwiftData/Room adapters, transactions, migrations and offline/online sync: [Persistence and sync](references/persistence-and-sync.md)
+- A feature that shows server data and lets the user change it, designing or reviewing the path from an edit to the store and the server, push, stream or polling updates, a browser store, or testing sync: [Data layer and sync strategy](references/data-layer.md)
 - HTTP/RPC, authentication, streams, retries and background transfers: [External APIs](references/external-apis.md)
 - Swift cross-compilation, JNI, actors and packaging: [Swift on Android](references/swift-on-android.md)
 - A web surface on the same core: [Optional web target](references/web-target.md)

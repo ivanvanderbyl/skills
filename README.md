@@ -51,6 +51,8 @@ Each run starts from the project's `.reflex/` directory. The bundled `scripts/re
 
 Its design guideline for navigation is the Duo pattern's rule applied to every target: the core owns one window over an ordered path of panes, and each host sets how many panes fit from its width. The iPhone rule is checked against the reference clips; the Android and web mapping is taken from vendor documentation and has not been run on a device.
 
+Its data layer reference sets out the sync strategy for data the user can change: an edit is an outbox record laid over the server-confirmed row, never written into it, and eight rules keep the view consistent through app kills, lost requests and other people's edits. `assets/DataLayerCore.swift` models those rules for one resource with no imports, `assets/WritePathSimulation.swift` is a seeded simulation of the faults, and `assets/DataLayerTests.swift` holds one hand-driven test per rule and one control per rule that must fail when the rule is turned off. The rules were checked on that model and, in one run, against a real API server with a simulated client store. They were not checked against a real client store or a device, and the browser store notes were observed in Chromium only.
+
 The skill covers fresh projects, combining repositories and preserving an existing Apple package during migration. Its supporting references describe typed Swift/Kotlin contracts, native storage and migrations, sync recovery, API ownership, authentication, background work, platform services and testing. The guidance recommends architecture and verification steps; it does not supply a prebuilt application framework or sync engine.
 
 ## Lay out an app for iPhone Duo

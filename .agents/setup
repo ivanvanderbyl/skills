@@ -5,7 +5,8 @@
 # The skills themselves are Markdown plus one standard-library Python script,
 # which the base image already runs. Setup adds what the skills' own code needs
 # on Linux:
-#   - Swift, to run `swift test` on skills/duo-pattern/assets and the Reflex core
+#   - Swift, to run `swift test` on skills/duo-pattern/assets,
+#     skills/reflex-pattern/assets and the Reflex core
 #   - the matching Wasm Swift SDK and binaryen (wasm-opt), for the Reflex web
 #     target described in skills/reflex-pattern/references/web-target.md
 # Xcode, simulators and the Android toolchain live on the Mac satellite, which
